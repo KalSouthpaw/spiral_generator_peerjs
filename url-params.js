@@ -153,6 +153,10 @@ function onFontPickerChange(inputElement, value) {
 
 function getUrlParams(isRendering = false) {
 	let urlParams = window.location.search;
+
+	if (!urlParams || urlParams === "") return; 
+    if (urlParams.includes('host=')) return; // Ignore PeerJS room IDs
+
 	if (!urlParams.includes('&')) {
 		urlParams = LZString.decompressFromEncodedURIComponent(urlParams.substring(1));
 	} else {

@@ -11,7 +11,6 @@
 	<script src="CCapture.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-	<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 
 	<!--
 		In an ideal world, we could load this straight from the GitHub page of lz-string: https://github.com/pieroxy/lz-string/tree/master
@@ -954,94 +953,8 @@
 		});
 	</script>
 
-<script>
-// Initialize PeerJS for the Host
-const peer = new Peer(); 
-let subjectConnections = [];
-
-peer.on('open', function(id) {
-	console.log('Host Peer ID is: ' + id);
-	
-	// Generate the link for the subject
-	const currentUrl = window.location.href.split('?')[0];
-	const viewerUrl = currentUrl.replace('index.html', 'viewer.html');
-	const subjectLink = `${viewerUrl}?host=${id}`;
-	
-	// Add the link to the Export Menu
-	const exportMenu = document.getElementById('export-menu');
-	const sessionDiv = document.createElement('div');
-	sessionDiv.innerHTML = `<br><hr><br><h3>Live Session Link</h3>
-							<button onclick="navigator.clipboard.writeText('${subjectLink}'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy Subject Link', 2000)">Copy Subject Link</button>
-							<p style="font-size:12px; margin-top:5px;">Send this to the subject. Changes will sync in real-time.</p>`;
-	exportMenu.appendChild(sessionDiv);
-});
-
-peer.on('connection', function(conn) {
-	console.log('Subject connected!');
-	subjectConnections.push(conn);
-	
-	conn.on('open', function() {
-		sendSyncData(); // Send initial state immediately upon connection
-	});
-
-	conn.on('close', function() {
-		subjectConnections = subjectConnections.filter(c => c !== conn);
-		console.log('Subject disconnected.');
-	});
-});
-
-// Function to collect all current parameters and send them
-function sendSyncData() {
-	if (subjectConnections.length === 0) return;
-
-	let state = {};
-	inputList.forEach(info => {
-		let el = document.getElementById(info.inputId);
-		if (el) {
-			if (info.inputType === 'button_toggle') {
-				state[info.inputId] = el.classList.contains('active');
-			} else {
-				state[info.inputId] = el.value;
-			}
-		}
-	});
-
-	// Add visibility state
-	const visibilityBtn = document.getElementById('toggle-spiral-visibility');
-	state['spiral_visibility'] = visibilityBtn ? visibilityBtn.classList.contains('active') : true;
-
-	// Broadcast to all connected subjects
-	subjectConnections.forEach(conn => conn.send(state));
-}
-
-// Attach listeners to everything in inputList so it syncs immediately
-setTimeout(() => {
-	inputList.forEach(info => {
-		let el = document.getElementById(info.inputId);
-		if (el) {
-			el.addEventListener('input', sendSyncData);
-			el.addEventListener('change', sendSyncData);
-			if (info.inputType === 'button_toggle') {
-				el.addEventListener('click', () => setTimeout(sendSyncData, 50));
-			}
-		}
-	});
-
-	// Add listener to our custom visibility button
-	const visibilityBtn = document.getElementById('toggle-spiral-visibility');
-	if(visibilityBtn) {
-		visibilityBtn.addEventListener('click', function() {
-			this.classList.toggle('active');
-			if (this.classList.contains('active')) {
-				this.innerText = "Subject Spiral Visible";
-			} else {
-				this.innerText = "Subject Spiral Hidden";
-			}
-			sendSyncData();
-		});
-	}
-}, 1000); // Wait for the DOM and other scripts to setup
-</script>
-
+<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+<script src="sync.js"></script>
+</body>
 </body>
 </html>
