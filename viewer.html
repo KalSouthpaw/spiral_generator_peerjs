@@ -11,11 +11,16 @@
 	<script src="CCapture.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 	<style>
-			#hypnoText-controls, #tab-controls, #spiral-menu, #pend-menu, #export-menu, #credits, #looping-controls {
-					display: none;
-			}
-	</style> 
+		/* Completely hide all UI from the subject */
+		#hypnoText-controls, #tab-controls, #spiral-menu, #pend-menu, #export-menu, #credits, #looping-controls, #fullscreenButton {
+			display: none !important;
+		}
+		#spiralCanvas {
+			transition: opacity 1s ease-in-out;
+		}
+	</style>
 	
 	<!--
 		In an ideal world, we could load this straight from the GitHub page of lz-string: https://github.com/pieroxy/lz-string/tree/master
@@ -879,6 +884,68 @@
 			document.getElementById("backgroundImage").style.opacity = newOpacity;
 		});
 	</script>
+
+<script>
+    // Extract the Host ID from the URL
+    const urlParamsPeer = new URLSearchParams(window.location.search);
+    const hostId = urlParamsPeer.get('host');
+
+    if (hostId) {
+        const peer = new Peer();
+
+        peer.on('open', function(id) {
+            console.log('Connecting to host: ' + hostId);
+            const conn = peer.connect(hostId);
+
+            conn.on('data', function(data) {
+                // When we receive data from the Host, apply it
+                
+                // 1. Handle Spiral Visibility
+                if (data['spiral_visibility'] !== undefined) {
+                    const canvas = document.getElementById('spiralCanvas');
+                    canvas.style.opacity = data['spiral_visibility'] ? '1' : '0';
+                }
+
+                // 2. Handle all normal parameters
+                for (let key in data) {
+                    if (key === 'spiral_visibility') continue;
+
+                    let el = document.getElementById(key);
+                    if (el) {
+                        let info = inputList.find(i => i.inputId === key);
+                        if (info) {
+                            if (info.inputType === 'button_toggle') {
+                                if (data[key]) el.classList.add('active');
+                                else el.classList.remove('active');
+                            } else {
+                                // Only update if value actually changed to prevent cursor jumps in text areas
+                                if (el.value !== data[key]) {
+                                    el.value = data[key];
+                                }
+                            }
+                            // Trigger updates natively
+                            el.dispatchEvent(new Event('input'));
+                            el.dispatchEvent(new Event('change'));
+                        }
+                    }
+                }
+            });
+
+            conn.on('close', function() {
+                // Connection lost or closed by host
+                document.body.innerHTML = `
+                    <div style="color:rgba(255,255,255,0.5); display:flex; width:100vw; height:100vh; justify-content:center; align-items:center; flex-direction:column; background:black;">
+                        <h1>Session Ended</h1>
+                        <p>The hypnotist has closed the connection.</p>
+                    </div>`;
+            });
+            
+            peer.on('error', function(err) {
+                console.error("PeerJS Error:", err);
+            });
+        });
+    }
+</script>
 
 </body>
 </html>
