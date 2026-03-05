@@ -97,13 +97,21 @@ function initClient(hostId) {
                     let info = inputList.find(i => i.inputId === key);
                     if (info) {
                         if (info.inputType === 'button_toggle') {
-                            if (data[key]) el.classList.add('active');
-                            else el.classList.remove('active');
+                            let isActive = el.classList.contains('active');
+                            if (data[key] !== isActive) {
+                                if (data[key]) el.classList.add('active');
+                                else el.classList.remove('active');
+                                el.dispatchEvent(new Event('input'));
+                                el.dispatchEvent(new Event('change'));
+                            }
                         } else {
-                            if (el.value !== data[key]) el.value = data[key];
+                            // FIX: Only dispatch events if the value actually changed!
+                            if (el.value != data[key]) { 
+                                el.value = data[key];
+                                el.dispatchEvent(new Event('input'));
+                                el.dispatchEvent(new Event('change'));
+                            }
                         }
-                        el.dispatchEvent(new Event('input'));
-                        el.dispatchEvent(new Event('change'));
                     }
                 }
             }
